@@ -1,8 +1,10 @@
+English | [中文](README.zh-CN.md)
+
 # DSH Plugin Pitfalls
 
 Unofficial, community-maintained **pitfall handbook for DeepSeek Harness (DSH) plugin development**.
 
-**[中文手册：docs/DSH-PLUGIN-PITFALLS.zh-CN.md](docs/DSH-PLUGIN-PITFALLS.zh-CN.md)**
+**[English handbook: docs/DSH-PLUGIN-PITFALLS.en.md](docs/DSH-PLUGIN-PITFALLS.en.md)** · **[中文手册：docs/DSH-PLUGIN-PITFALLS.zh-CN.md](docs/DSH-PLUGIN-PITFALLS.zh-CN.md)**
 
 ## What this is
 

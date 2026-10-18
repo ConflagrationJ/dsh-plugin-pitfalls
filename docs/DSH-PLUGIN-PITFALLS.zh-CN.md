@@ -1,6 +1,8 @@
+[English](DSH-PLUGIN-PITFALLS.en.md) | 中文
+
 # DeepSeek Harness 插件开发避坑手册
 
-> 版本 `v0.1.0` · 适用 DSH Desktop `44.7.0`（profile `desktop`）· 非官方文档
+> 版本 `v0.1.1` · 适用 DSH Desktop `44.7.0`（profile `desktop`）· 非官方文档
 > 官方文档永远优先：本文只补充“文档没有串起来、但会真正卡住”的地方。
 
 ## 0. 怎么用
@@ -273,3 +275,4 @@ cordis_inspect_query(client, Slots, listSubTree{root})
 ## 版本记录
 
 - `v0.1.0`（2026-10-18）：初版，基于 DSH Desktop 44.7.0 与一次真实 bundle 开发（`self-organizing-agent-team`）。
+- `v0.1.1`（2026-10-18）：补英文版（`DSH-PLUGIN-PITFALLS.en.md`）与中英文 README，内容与 v0.1.0 等价。
