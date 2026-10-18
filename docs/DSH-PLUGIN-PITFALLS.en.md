@@ -2,7 +2,7 @@ English | [中文](DSH-PLUGIN-PITFALLS.zh-CN.md)
 
 # DeepSeek Harness Plugin Development Pitfall Handbook
 
-> Version `v0.1.1` · Applies to DSH Desktop `44.7.0` (profile `desktop`) · Unofficial document
+> Version `v0.1.2` · Applies to DSH Desktop `44.7.0` (profile `desktop`) · Unofficial document
 > The official documentation always takes precedence: this document only fills in the places where the docs don't connect the dots but which really block you.
 
 ## 0. How to use it
@@ -209,6 +209,13 @@ cordis_inspect_query(client, Slots, listSubTree{root})
 | Only changing config values | Usually takes effect immediately, but only affects agents created afterwards |
 | Only changing docs/README | Not required |
 
+**P24｜Team messages: a successful tool call is not delivery**
+
+- Symptom: `send_message` returns `{sent:true}` and the teammate replies "what do you want". `list_agents` looks fine.
+- Root cause: `send_message` reports success when the steer is accepted (target inbox), and nothing after that: no later receipt confirms a durable flush or that the model read it. `spawn_teammate` is different: it flushes and checks the initial prompt before the member becomes `active`, and a prompt-checkpoint failure raises `TEAM_PROVISIONING_CONFLICT` instead of creating a member without its body.
+- What to do: do not use `list_agents` as delivery evidence (it only proves the tool exists). Use a nonce round-trip: spawn a probe teammate whose prompt embeds a random token, require it to write the token to a workspace file and echo it back, then verify both. To check `send_message`, repeat with a second token. Spawned names are permanent, so do this once per host build, not per task.
+- Verification: the file content equals the token after trimming an optional BOM or surrounding whitespace, the closing message echoes it, and timestamps are after the probe started; a thrown `send_message` means the message was never accepted.
+
 ## 8. Release engineering
 
 **P21｜Released archives are not reproducible**
@@ -237,6 +244,7 @@ cordis_inspect_query(client, Slots, listSubTree{root})
 - Keyed registrations in the same slot: a later registration replaces the earlier one; multiple bundles competing for the same key overwrite each other.
 - When coexisting with skills, keep only one source (P12).
 - Be careful when writing `engines.dsh`/`peerDependencies` for a DSH version: unmet requirements block installation; experimental packages may change schema across versions.
+- `@deepseek-ai/dsh-experimental-agent-team` ships `lib/types/mailbox.js` (durable queue, delivered acknowledgement, recovery), but `TeamService` does not import it on DSH 44.7.0. Do not use that file to argue runtime delivery semantics (version pin: `0.2.1-rc.2`).
 
 ## 10. Documentation map
 
@@ -261,6 +269,7 @@ cordis_inspect_query(client, Slots, listSubTree{root})
 | Behaviour unchanged after install/change | Does replacing the package require a restart; is the filesystem skill installed as well |
 | Config can be clicked but not saved | Are the fields volatile; is the profile `cordis.patch.yml` written |
 | Skill loads an old version | The base directory returned by `skill`; is there a second source |
+| Message sent but the teammate does nothing | Don't stop at `list_agents`; use the nonce round-trip probe (P24) |
 | Asset hashes differ | Ordering, line endings, timestamps, `create_system`, zlib |
 
 ## Appendix B: Minimum acceptance checklist
@@ -276,3 +285,4 @@ cordis_inspect_query(client, Slots, listSubTree{root})
 
 - `v0.1.0` (2026-10-18): first version, based on DSH Desktop 44.7.0 and one real bundle development (`self-organizing-agent-team`).
 - `v0.1.1` (2026-10-18): added the English edition (`DSH-PLUGIN-PITFALLS.en.md`) and bilingual READMEs; content is equivalent to v0.1.0.
+- `v0.1.2` (2026-10-18): added P24 (Team message delivery semantics and the nonce round-trip probe), the matching Appendix A symptom row, and the §9 note that `mailbox.js` is not wired.

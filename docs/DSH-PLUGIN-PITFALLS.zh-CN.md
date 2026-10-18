@@ -2,7 +2,7 @@
 
 # DeepSeek Harness 插件开发避坑手册
 
-> 版本 `v0.1.1` · 适用 DSH Desktop `44.7.0`（profile `desktop`）· 非官方文档
+> 版本 `v0.1.2` · 适用 DSH Desktop `44.7.0`（profile `desktop`）· 非官方文档
 > 官方文档永远优先：本文只补充“文档没有串起来、但会真正卡住”的地方。
 
 ## 0. 怎么用
@@ -209,6 +209,13 @@ cordis_inspect_query(client, Slots, listSubTree{root})
 | 只改配置值 | 通常即时生效，但只影响之后创建的 agent |
 | 只改文档/README | 无需 |
 
+**P24｜团队消息：工具成功 ≠ 正文送达**
+
+- 现象：`send_message` 返回 `{sent:true}`，队友却回一句"你想做什么"。`list_agents` 一切正常。
+- 根因：`send_message` 只在 steer 被接收时报告成功（目标 inbox 接收），之后没有回执——不确认已完成持久 flush，也不确认模型读了它。`spawn_teammate` 相反：初始 prompt 会在成员转 `active` 前 flush 并核对，核对失败抛 `TEAM_PROVISIONING_CONFLICT`，不会留下"成功但没正文"的成员。
+- 做法：不要用 `list_agents` 证明送达（它只证明 tool 在）。用 nonce 往返：spawn 时要求队友把随机串写进 workspace 文件并原样回传，核对文件与结束消息；要验 `send_message` 就再发一个随机串做第二轮。spawn 的名字永久占用，按宿主构建做一次，不要每个任务做。
+- 验证：文件内容在去掉可选 BOM 或首尾空白后等于随机串、结束消息原样回传，且时间戳晚于探针开始；`send_message` 抛错则说明消息根本没被接收。
+
 ## 8. 发布工程
 
 **P21｜发布的压缩包不可复现**
@@ -237,6 +244,7 @@ cordis_inspect_query(client, Slots, listSubTree{root})
 - 同一 slot 的 keyed 注册：后注册会替换前者；多个 bundle 抢同一个 key 会互相覆盖。
 - 和 skill 共存时只保留一个来源（P12）。
 - 依赖 DSH 版本时谨慎写 `engines.dsh`/`peerDependencies`：不满足会阻止安装；实验性包可能跨版本变 schema。
+- `@deepseek-ai/dsh-experimental-agent-team` 随包带了 `lib/types/mailbox.js`（持久队列 + delivered 确认 + 恢复重试），但 DSH 44.7.0 的 `TeamService` 没有 import 它；不要用这个文件论证运行时送达语义（版本 pin：`0.2.1-rc.2`）。
 
 ## 10. 文档地图
 
@@ -261,6 +269,7 @@ cordis_inspect_query(client, Slots, listSubTree{root})
 | 装完/改完行为没变 | 是否替换包需要重启；是否双装了文件系统 skill |
 | 配置能点但不保存 | 字段是否 volatile；profile `cordis.patch.yml` 是否写入 |
 | 技能加载到旧版本 | `skill` 返回的 base directory；是否有第二来源 |
+| 消息发出但队友没反应 | 别只看 `list_agents`；用 nonce 往返探针（P24） |
 | 资产 hash 不一致 | 排序、行尾、时间戳、`create_system`、zlib |
 
 ## 附录 B：最小验收清单
@@ -276,3 +285,4 @@ cordis_inspect_query(client, Slots, listSubTree{root})
 
 - `v0.1.0`（2026-10-18）：初版，基于 DSH Desktop 44.7.0 与一次真实 bundle 开发（`self-organizing-agent-team`）。
 - `v0.1.1`（2026-10-18）：补英文版（`DSH-PLUGIN-PITFALLS.en.md`）与中英文 README，内容与 v0.1.0 等价。
+- `v0.1.2`（2026-10-18）：新增 P24（Team 消息投递语义与 nonce 往返探针）、附录 A 对应症状行，以及 §9 的 `mailbox.js` 未接线提醒。
